@@ -19,7 +19,6 @@ class DBQuery {
 	values = {}; // 用于 insert 和 update
 	limitClause = null;
 	orderConditions = [];
-
 	constructor(options) {
 		const opt = {
 			...this.options,
@@ -44,7 +43,7 @@ class DBQuery {
 		this.values = {}; // 用于 insert 和 update 
 		this.limitClause = null;
 		this.orderConditions = []
-		this.limitCondition=null
+		this.limitCondition = null
 	}
 
 	setPath(path) {
@@ -58,26 +57,27 @@ class DBQuery {
 	open() {
 		const _this = this
 		return new Promise((reslove, reject) => {
-			const isOpen = plus.sqlite.isOpenDatabase(this.options)
+			const isOpen = plus.sqlite.isOpenDatabase(_this.options)
+			console.log(isOpen)
 			if (isOpen) {
 				console.log('数据库已打开', isOpen)
 				return reslove(true)
 			} else {
 				console.log('数据库未打开，正在打开')
 				plus.sqlite.openDatabase({
-					name: this.options.name,
-					path: this.options.path,
+					name: _this.options.name,
+					path: _this.options.path,
 					success: () => {
 						console.log('数据库已打开')
 						reslove(true)
 					},
 					fail(err) {
+						console.log(plus.sqlite.isOpenDatabase(_this.options))
 						console.error(err)
 						reslove(false)
 					}
 				})
 			}
-
 		})
 	}
 
@@ -134,19 +134,28 @@ class DBQuery {
 	 */
 	close() {
 		const _this = this
-		return new Promise((reslove, reject) => {
-			plus.sqlite.closeDatabase({
-				name: _this.options.name,
-				success() {
-					console.log('数据库已关闭')
-					reslove(true)
-				},
-				fail(err) {
-					console.error(err)
-					reslove(false)
-				}
+		setTimeout(function() {
+			const isOpen=plus.sqlite.isOpenDatabase({
+				name:_this.options.name,
+				path:_this.options.path
 			})
-		})
+			if(!isOpen){
+				return true
+			}
+			return new Promise((reslove, reject) => {
+				plus.sqlite.closeDatabase({
+					name: _this.options.name,
+					success() {
+						console.log('数据库已关闭')
+						reslove(true)
+					},
+					fail(err) {
+						console.error(err)
+						reslove(false)
+					}
+				})
+			})
+		}, 10000)
 	}
 
 	/**
@@ -225,17 +234,17 @@ class DBQuery {
 		}
 
 		const offset = (page - 1) * pageSize;
-		this.options.autoClose=false
-		const res=await this.limit(pageSize, offset).select();
-		const countRes=await this.execSql("SELECT COUNT(id) count FROM "+this.tableName+";")
+		this.options.autoClose = false
+		const res = await this.limit(pageSize, offset).select();
+		const countRes = await this.execSql("SELECT COUNT(id) count FROM " + this.tableName + ";")
 		this.close()
-		const count=countRes[0].count
-		const obj={
-			index:page,
-			size:pageSize,
-			total:count,
-			count:Math.ceil(count/pageSize),
-			data:res
+		const count = countRes[0].count
+		const obj = {
+			index: page,
+			size: pageSize,
+			total: count,
+			count: Math.ceil(count / pageSize),
+			data: res
 		}
 		return obj
 	}
